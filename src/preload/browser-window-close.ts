@@ -6,7 +6,7 @@ import { installBrowserHistoryWheel } from './browser-history-wheel'
 const BROWSER_HISTORY_GESTURE_CHANNEL = 'browser:history-gesture'
 const BROWSER_HISTORY_WHEEL_CHANNEL = 'browser:history-wheel'
 
-// Why: raw require keeps the sandboxed preload standalone in the main-process CJS build.
+// Raw require keeps the sandboxed preload standalone in the CJS build.
 const {
   contextBridge,
   ipcRenderer
