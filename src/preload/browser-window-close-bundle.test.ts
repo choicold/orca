@@ -4,7 +4,7 @@ import { runInNewContext } from 'node:vm'
 import { build } from 'vite'
 import { expect, it } from 'vitest'
 
-it('loads the emitted guest preload in a sandbox that cannot require shared chunks', async () => {
+it('preserves close requests and gestures in the standalone sandboxed preload', async () => {
   const result = await build({
     configFile: false,
     logLevel: 'silent',
@@ -30,6 +30,7 @@ it('loads the emitted guest preload in a sandbox that cannot require shared chun
   }
   const ipc = new EventEmitter()
   const reports: unknown[][] = []
+  const closeRequests: unknown[][] = []
   const listeners = new Map<string, (event: object) => void>()
   const window = {
     close: () => {},
@@ -48,13 +49,26 @@ it('loads the emitted guest preload in a sandbox that cannot require shared chun
           throw new Error(`Sandbox cannot load ${module}`)
         }
         return {
-          contextBridge: { executeInMainWorld: ({ func }: { func: () => void }) => func() },
-          ipcRenderer: Object.assign(ipc, { send: (...args: unknown[]) => reports.push(args) })
+          contextBridge: {
+            executeInMainWorld: ({
+              func,
+              args
+            }: {
+              func: (requestClose: () => void) => void
+              args: [() => void]
+            }) => func(...args)
+          },
+          ipcRenderer: Object.assign(ipc, {
+            send: (...args: unknown[]) => reports.push(args),
+            sendToHost: (...args: unknown[]) => closeRequests.push(args)
+          })
         }
       }
     },
     { timeout: 1000 }
   )
+  window.close()
+  expect(closeRequests).toEqual([['orca:guest-window-close']])
   ipc.emit('browser:history-gesture', {}, 7)
   listeners.get('wheel')?.({
     isTrusted: true,

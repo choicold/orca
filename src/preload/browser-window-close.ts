@@ -1,4 +1,7 @@
-import { installBrowserWindowCloseGuard } from './browser-window-close-installation'
+import {
+  installBrowserWindowCloseGuard,
+  PRELOAD_BROWSER_GUEST_WINDOW_CLOSE_CHANNEL
+} from './browser-window-close-installation'
 import type { ContextBridge, IpcRenderer } from 'electron'
 import { installBrowserHistoryWheel } from './browser-history-wheel'
 
@@ -7,12 +10,16 @@ const BROWSER_HISTORY_GESTURE_CHANNEL = 'browser:history-gesture'
 const BROWSER_HISTORY_WHEEL_CHANNEL = 'browser:history-wheel'
 
 // Raw require keeps the sandboxed preload standalone in the CJS build.
-const {
-  contextBridge,
-  ipcRenderer
-}: { contextBridge: ContextBridge; ipcRenderer: IpcRenderer } = require('electron')
+const electron: {
+  contextBridge: ContextBridge
+  ipcRenderer: IpcRenderer
+} = require('electron')
+const { contextBridge, ipcRenderer } = electron
 
-contextBridge.executeInMainWorld({ func: installBrowserWindowCloseGuard })
+contextBridge.executeInMainWorld({
+  func: installBrowserWindowCloseGuard,
+  args: [() => ipcRenderer.sendToHost(PRELOAD_BROWSER_GUEST_WINDOW_CLOSE_CHANNEL)]
+})
 
 if (process.platform === 'darwin') {
   installBrowserHistoryWheel(
