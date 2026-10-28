@@ -41,7 +41,7 @@ it('preserves close requests and gestures in the standalone sandboxed preload', 
   runInNewContext(
     entry.code,
     {
-      process: { platform: 'darwin' },
+      process: { platform: 'darwin', isMainFrame: true },
       window,
       WheelEvent: { DOM_DELTA_PIXEL: 0 },
       require: (module: string) => {

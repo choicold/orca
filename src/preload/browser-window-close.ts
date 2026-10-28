@@ -16,10 +16,13 @@ const electron: {
 } = require('electron')
 const { contextBridge, ipcRenderer } = electron
 
-contextBridge.executeInMainWorld({
-  func: installBrowserWindowCloseGuard,
-  args: [() => ipcRenderer.sendToHost(PRELOAD_BROWSER_GUEST_WINDOW_CLOSE_CHANNEL)]
-})
+// Subframe window.close() is already inert; preserve the frame's own implementation.
+if (process.isMainFrame) {
+  contextBridge.executeInMainWorld({
+    func: installBrowserWindowCloseGuard,
+    args: [() => ipcRenderer.sendToHost(PRELOAD_BROWSER_GUEST_WINDOW_CLOSE_CHANNEL)]
+  })
+}
 
 if (process.platform === 'darwin') {
   installBrowserHistoryWheel(

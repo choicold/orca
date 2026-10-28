@@ -24,7 +24,7 @@ describe('browser window close preload', () => {
     expect(Reflect.set(window, 'close', nativeClose)).toBe(false)
   })
 
-  it('routes a close through the preload entry to the renderer channel', () => {
+  it.each([true, false])('routes a close only from the top frame: %s', (isMainFrame) => {
     const sendToHost = vi.fn()
     const nativeClose = vi.fn()
     const pageWindow = { close: nativeClose }
@@ -38,7 +38,7 @@ describe('browser window close preload', () => {
     }).outputFiles[0].text
 
     runInNewContext(preload, {
-      process: { platform: 'linux' },
+      process: { platform: 'linux', isMainFrame },
       window: pageWindow,
       require: (name: string) => {
         expect(name).toBe('electron')
@@ -56,7 +56,7 @@ describe('browser window close preload', () => {
 
     pageWindow.close()
 
-    expect(nativeClose).not.toHaveBeenCalled()
-    expect(sendToHost.mock.calls).toEqual([[BROWSER_GUEST_WINDOW_CLOSE_CHANNEL]])
+    expect(nativeClose).toHaveBeenCalledTimes(isMainFrame ? 0 : 1)
+    expect(sendToHost.mock.calls).toEqual(isMainFrame ? [[BROWSER_GUEST_WINDOW_CLOSE_CHANNEL]] : [])
   })
 })
